@@ -1,0 +1,47 @@
+name: Build BilliardVision APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download repository
+        uses: actions/checkout@v4
+
+      - name: Find and extract project ZIP
+        run: |
+          mkdir build-project
+          ZIP=$(find . -maxdepth 1 -type f -name "*.zip" | head -n 1)
+          echo "Using ZIP: $ZIP"
+          unzip -q "$ZIP" -d build-project
+
+      - name: Locate Android project
+        run: |
+          PROJECT=$(find build-project -name "settings.gradle.kts" -type f | head -n 1 | xargs dirname)
+          echo "PROJECT_DIR=$PROJECT" >> "$GITHUB_ENV"
+          echo "Project: $PROJECT"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build APK
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: gradle :app:assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: BilliardVision-APK
+          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk

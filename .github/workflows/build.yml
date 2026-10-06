@@ -38,7 +38,18 @@ jobs:
 
       - name: Build APK
         working-directory: ${{ env.PROJECT_DIR }}
-        run: gradle :app:assembleDebug --stacktrace --info
+        run: |
+          set +e
+          gradle :app:assembleDebug --stacktrace --info --console=plain 2>&1 | tee build.log
+          EXIT_CODE=${PIPESTATUS[0]}
+          exit $EXIT_CODE
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Gradle-Build-Log
+          path: ${{ env.PROJECT_DIR }}/build.log
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
